@@ -6,7 +6,8 @@ A media player implemented using Java based on the xuggler framework (http://www
 
 This project has been developed using the Eclipse IDE (http://www.eclipse.org).
 
-Programming Language: Java (JavaSE-1.6)
+Programming Language: 	Java (JavaSE-1.6)
+Dependency management:	Maven (http://maven.apache.org)
 
 Author
 ------
