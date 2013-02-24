@@ -13,14 +13,14 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-	
+
 	<repositories>
 		<repository>
 			<id>xuggle repo</id>
 			<url>http://xuggle.googlecode.com/svn/trunk/repo/share/java/</url>
 		</repository>
 	</repositories>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -32,11 +32,21 @@
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.17</version>
-    </dependency>
+		</dependency>
 		<dependency>
 			<groupId>xuggle</groupId>
 			<artifactId>xuggle-xuggler</artifactId>
 			<version>5.2</version>
 		</dependency>
 	</dependencies>
+
+	<developers>
+		<developer>
+			<id>post@sebastian-weiss.de</id>
+			<name>Sebastian A. Weiss</name>
+			<email>post@sebastian-weiss.de</email>
+			<url>http://www.sebastian-weiss.de</url>
+		</developer>
+	</developers>
+
 </project>
