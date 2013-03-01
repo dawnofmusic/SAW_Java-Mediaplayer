@@ -78,7 +78,7 @@ public class Player extends JFrame {
      * Default constructor.
      */
     public Player() {
-	super("nacamar Player"); //$NON-NLS-1$
+	super(".: SAW Java Mediaplayer :."); //$NON-NLS-1$
 	this.pcs = new PropertyChangeSupport(this);
 	this.view = new VideoView();
 	// getContentPane().setLayout(null);
