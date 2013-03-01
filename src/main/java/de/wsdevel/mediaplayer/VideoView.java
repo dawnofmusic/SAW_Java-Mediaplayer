@@ -15,6 +15,7 @@
  */
 package de.wsdevel.mediaplayer;
 
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
 
@@ -24,6 +25,10 @@ import javax.swing.JComponent;
  * ImagePanel.
  */
 public class VideoView extends JComponent {
+
+    /** {@link Dimension} The DEFAULT_PREFERRED_SIZE. */
+    private static final Dimension DEFAULT_PREFERRED_SIZE = new Dimension(400,
+	    300);
 
     /** {@link long} The serialVersionUID. */
     private static final long serialVersionUID = 356677462215058852L;
@@ -37,6 +42,7 @@ public class VideoView extends JComponent {
     public VideoView() {
 	super();
 	setLayout(null);
+	setPreferredSize(DEFAULT_PREFERRED_SIZE);
     }
 
     /**

@@ -23,11 +23,11 @@ import java.util.Date;
  */
 public class Frame {
 
-    /** {@link Date} The timestamp. */
-    private Date timestamp;
-
     /** {@link Image} The image. */
     private Image image;
+
+    /** {@link Date} The timestamp. */
+    private Date timestamp;
 
     /**
      * Frame constructor.

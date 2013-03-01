@@ -15,9 +15,12 @@
  */
 package de.wsdevel.mediaplayer;
 
+import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.Timer;
@@ -26,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +47,18 @@ public class Player extends JFrame {
     /** {@link long} The serialVersionUID. */
     private static final long serialVersionUID = 7345126953094136165L;
 
-    /** {@link VideoView} The view. */
-    private final VideoView view;
+    /**
+     * {@code boolean true} if frame buffer is full;
+     */
+    private boolean frameBufferFull = false;
+
+    /** {@link ConcurrentLinkedQueue<Frame>} The frameQueue. */
+    private final ConcurrentLinkedQueue<Frame> frameQueue = new ConcurrentLinkedQueue<Frame>();
+
+    /**
+     * {@code int} the maximum number of frames to be buffered;
+     */
+    private int maxFramesBufferSize = 100;
 
     /**
      * {@link PropertyChangeSupport}
@@ -56,23 +70,13 @@ public class Player extends JFrame {
      */
     private final Timer playerTimer = new Timer("Player"); //$NON-NLS-1$
 
-    /** {@link ConcurrentLinkedQueue<Frame>} The frameQueue. */
-    private final ConcurrentLinkedQueue<Frame> frameQueue = new ConcurrentLinkedQueue<Frame>();
-
     /**
      * {@code boolean} determining whether player is in play mode or not.
      */
     private boolean playing = false;
 
-    /**
-     * {@code int} the maximum number of frames to be buffered;
-     */
-    private int maxFramesBufferSize = 100;
-
-    /**
-     * {@code boolean true} if frame buffer is full;
-     */
-    private boolean frameBufferFull = false;
+    /** {@link VideoView} The view. */
+    private final VideoView view;
 
     /**
      * Default constructor.
@@ -81,18 +85,19 @@ public class Player extends JFrame {
 	super(".: SAW Java Mediaplayer :."); //$NON-NLS-1$
 	this.pcs = new PropertyChangeSupport(this);
 	this.view = new VideoView();
-	// getContentPane().setLayout(null);
-	// getContentPane().add(this.view);
-
 	setContentPane(this.view);
-
-	setSize(320, 240);
-
 	this.view.addComponentListener(new ComponentAdapter() {
 	    @Override
-	    public void componentResized(ComponentEvent e) {
-		// setSize(e.getComponent().getWidth(), e.getComponent()
-		// .getHeight());
+	    public void componentResized(final ComponentEvent e) {
+		pack();
+	    }
+	});
+
+	setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+	addWindowListener(new WindowAdapter() {
+	    @Override
+	    public void windowClosing(final WindowEvent e) {
+		System.exit(0);
 	    }
 	});
 
@@ -257,7 +262,9 @@ public class Player extends JFrame {
      */
     public void setViewSize(final int width, final int height) {
 	if (this.view != null) {
-	    this.view.setSize(width, height);
+	    final Dimension size = new Dimension(width, height);
+	    this.view.setPreferredSize(size);
+	    this.view.setSize(size);
 	}
     }
 
