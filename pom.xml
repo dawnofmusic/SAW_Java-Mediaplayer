@@ -19,6 +19,11 @@
 			<id>xuggle repo</id>
 			<url>http://xuggle.googlecode.com/svn/trunk/repo/share/java/</url>
 		</repository>
+		<repository>
+			<id>sebastian-weiss</id>
+			<name>Sebastian's Repository</name>
+			<url>http://www.sebastian-weiss.de/mvn-repo</url>
+		</repository>
 	</repositories>
 
 	<dependencies>
@@ -42,6 +47,11 @@
 			<groupId>xuggle</groupId>
 			<artifactId>xuggle-utils</artifactId>
 			<version>1.22</version>
+		</dependency>
+		<dependency>
+			<groupId>de.wsdevel</groupId>
+			<artifactId>SAW_Java-Tools</artifactId>
+			<version>1.0.1</version>
 		</dependency>
 	</dependencies>
 
