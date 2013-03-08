@@ -22,6 +22,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.xuggle.xuggler.Global;
 import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
@@ -32,8 +35,7 @@ import com.xuggle.xuggler.IStream;
 import com.xuggle.xuggler.IStreamCoder;
 import com.xuggle.xuggler.IVideoPicture;
 import com.xuggle.xuggler.IVideoResampler;
-import com.xuggle.xuggler.video.ConverterFactory;
-import com.xuggle.xuggler.video.ConverterFactory.Type;
+import com.xuggle.xuggler.Utils;
 
 import de.wsdevel.mediaplayer.Frame;
 
@@ -60,14 +62,17 @@ public class VideoInputStream {
     /** {@link IStreamCoder} The videoCoder. */
     private IStreamCoder videoCoder;
 
-    /** {@link String} The descriptor. */
-    private final String descriptor;
+    // /** {@link String} The descriptor. */
+    // private String descriptor;
 
     /** {@link IVideoResampler} The resampler. */
     private IVideoResampler resampler = null;
 
     /** {@link InputStream} The innerStream. */
     private final InputStream innerStream;
+
+    /** ${Log} the log for this type. */
+    private static final Log LOG = LogFactory.getLog(VideoInputStream.class);
 
     /**
      * VideoInputStream constructor.
@@ -77,8 +82,7 @@ public class VideoInputStream {
      * @throws IOException
      * @throws CodecException
      */
-    public VideoInputStream(final InputStream innerISRef) throws IOException,
-	    CodecException {
+    public VideoInputStream(final InputStream innerISRef) throws IOException {
 	this.innerStream = innerISRef;
 
 	// Let's make sure that we can actually convert video pixel formats.
@@ -89,10 +93,21 @@ public class VideoInputStream {
 		    + "this demo to work");
 	}
 
+	Collection<String> include = new LinkedList<String>();
+	include.add(ContainerFormats.QuickTime_MPEG4_Motion_JPEG_2000_format
+		.getLabel());
 	Collection<String> exclude = new LinkedList<String>();
 	exclude.add(ContainerFormats.Tele_Typewriter.getLabel());
 	exclude.add(ContainerFormats.Sony_OpenMG_audio.getLabel());
 	exclude.add(ContainerFormats.American_Laser_Games_MM_format.getLabel());
+	exclude.add(ContainerFormats.NC_camera_feed_format.getLabel());
+	exclude.add(ContainerFormats.VfW_video_capture.getLabel());
+	exclude.add(ContainerFormats.Westwood_Studios_VQA_format.getLabel());
+	exclude.add(ContainerFormats.Interplay_C93.getLabel());
+	exclude.add(ContainerFormats.Discworld_II_BMV.getLabel());
+	exclude.add(ContainerFormats.Tiertex_Limited_SEQ_format.getLabel());
+	exclude.add(ContainerFormats.CD_Graphics_Format.getLabel());
+	exclude.add(ContainerFormats.Interchange_File_Format.getLabel());
 	exclude.add(ContainerFormats.Microsoft_Windows_ICO.getLabel());
 	exclude.add(ContainerFormats.PCM_unsigned_24_bit_big_endian_format
 		.getLabel());
@@ -105,29 +120,62 @@ public class VideoInputStream {
 	for (IContainerFormat iContainerFormat : installedInputFormats) {
 	    System.out.print("[" + index++ + "] "
 		    + iContainerFormat.getInputFormatLongName() + "... ");
-	    if (exclude.contains(iContainerFormat.getInputFormatLongName())) {
+	    if (exclude.contains(iContainerFormat.getInputFormatLongName())
+		    || !include.contains(iContainerFormat
+			    .getInputFormatLongName())) {
+		System.out.println("EXCLUDED.");
 		continue;
 	    }
 	    // Open up the container
-	    if (this.container.open(this.innerStream, iContainerFormat) >= 0) {
-		System.out.println("SUCCESS.");
-		break;
-		// throw new CodecException("error while opening InpuStream.");
+	    // if (this.container
+	    // .open("D:/usr/home/sweiss/workspace/nacamar_HBBTV_LSS/run/devel/contents/sintel-1280-surround.mp4",
+	    // IContainer.Type.READ, iContainerFormat) >= 0) {
+	    if (this.container
+		    .open("D:/usr/home/sweiss/workspace/nacamar_HBBTV_LSS/run/devel/contents/sintel_trailer-480p.mp4",
+			    IContainer.Type.READ, iContainerFormat) >= 0) {
+
+		// if (this.container.open(this.innerStream, iContainerFormat,
+		// true,
+		// false) >= 0) {
+		final String inputFormatLongName = this.container
+			.getContainerFormat().getInputFormatLongName();
+		System.out.println("the formats name is ["
+			+ inputFormatLongName + "]");
+		try {
+		    tryToInitFromCurrentContainerFormat();
+		    System.out.println("SUCCESS.");
+		    break;
+		} catch (CodecException ce) {
+		    // don't really care, just the wrong container format
+		    // (20130308 saw)
+		    if (LOG.isDebugEnabled()) {
+			LOG.debug(ce.getLocalizedMessage(), ce);
+		    }
+		    System.out.println("FAILURE.");
+		}
 	    } else {
 		System.out.println("FAILURE.");
 	    }
-
 	}
 
+    }
+
+    /**
+     * tryToInitFromCurrentContainerFormat.
+     * 
+     * @throws CodecException
+     */
+    private void tryToInitFromCurrentContainerFormat() throws CodecException {
 	this.videoStreamId = -1;
 	this.videoCoder = null;
 
 	// query how many streams the call to open found
-	final int numStreams = this.container.getNumStreams();
+	final int numStreams = container.getNumStreams();
 	for (int i = 0; i < numStreams; i++) {
 	    // Find the stream object
-	    final IStream stream = this.container.getStream(i);
-	    // Get the pre-configured decoder that can decode this stream;
+	    final IStream stream = container.getStream(i);
+	    // Get the pre-configured decoder that can decode this
+	    // stream;
 	    final IStreamCoder coder = stream.getStreamCoder();
 
 	    if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
@@ -150,16 +198,18 @@ public class VideoInputStream {
 	}
 
 	if (this.videoCoder.getPixelType() != IPixelFormat.Type.BGR24) {
-	    // if this stream is not in BGR24, we're going to need to
+	    // if this stream is not in BGR24, we're going to need
+	    // to
 	    // convert it. The VideoResampler does that for us.
 	    this.resampler = createResampler(this.videoCoder);
 	}
 
-	final Collection<Type> registeredConverters = ConverterFactory
-		.getRegisteredConverters();
-	// SEBASTIAN cleanup this bad code
-	this.descriptor = registeredConverters.iterator().next()
-		.getDescriptor();
+	// final Collection<Type> registeredConverters = ConverterFactory
+	// .getRegisteredConverters();
+	// // SEBASTIAN cleanup this bad code
+	// this.descriptor = registeredConverters.iterator().next()
+	// .getDescriptor();
+
 	this.timestampInStream = Global.NO_PTS;
 	this.startTimeTimestamp = 0;
 	this.packet = IPacket.make();
@@ -211,78 +261,80 @@ public class VideoInputStream {
      * @throws CodecException
      */
     public Frame readFrame() throws CodecException {
-	if (this.container.readNextPacket(this.packet) < 0) {
-	    return null;
-	}
-	/*
-	 * Now we have a packet, let's see if it belongs to our video stream
-	 */
-	if (this.packet.getStreamIndex() == this.videoStreamId) {
+	while (this.container.readNextPacket(packet) >= 0) {
+
 	    /*
-	     * We allocate a new picture to get the data out of Xuggler
+	     * Now we have a packet, let's see if it belongs to our video stream
 	     */
-	    final IVideoPicture picture = IVideoPicture.make(
-		    this.videoCoder.getPixelType(), this.videoCoder.getWidth(),
-		    this.videoCoder.getHeight());
-
-	    int offset = 0;
-	    while (offset < this.packet.getSize()) {
+	    if (this.packet.getStreamIndex() == this.videoStreamId) {
 		/*
-		 * Now, we decode the video, checking for any errors.
+		 * We allocate a new picture to get the data out of Xuggler
 		 */
-		final int bytesDecoded = this.videoCoder.decodeVideo(picture,
-			this.packet, offset);
-		if (bytesDecoded < 0) {
-		    throw new CodecException("Error decoding video.");
-		}
-		offset += bytesDecoded;
+		final IVideoPicture picture = IVideoPicture
+			.make(this.videoCoder.getPixelType(),
+				this.videoCoder.getWidth(),
+				this.videoCoder.getHeight());
 
-		/*
-		 * Some decoders will consume data in a packet, but will not be
-		 * able to construct a full video picture yet. Therefore you
-		 * should always check if you got a complete picture from the
-		 * decoder
-		 */
-		if (picture.isComplete()) {
-		    IVideoPicture newPic = picture;
+		int offset = 0;
+		while (offset < this.packet.getSize()) {
 		    /*
-		     * If the resampler is not null, that means we didn't get
-		     * the video in BGR24 format and need to convert it into
-		     * BGR24 format.
+		     * Now, we decode the video, checking for any errors.
 		     */
-		    if (this.resampler != null) {
-			// we must resample
-			newPic = IVideoPicture.make(
-				this.resampler.getOutputPixelFormat(),
-				picture.getWidth(), picture.getHeight());
-			if (this.resampler.resample(newPic, picture) < 0) {
-			    throw new CodecException(
-				    "could not resample video.");
+		    final int bytesDecoded = this.videoCoder.decodeVideo(
+			    picture, this.packet, offset);
+		    if (bytesDecoded < 0) {
+			throw new CodecException("Error decoding video.");
+		    }
+		    offset += bytesDecoded;
+
+		    /*
+		     * Some decoders will consume data in a packet, but will not
+		     * be able to construct a full video picture yet. Therefore
+		     * you should always check if you got a complete picture
+		     * from the decoder
+		     */
+		    if (picture.isComplete()) {
+			IVideoPicture newPic = picture;
+			/*
+			 * If the resampler is not null, that means we didn't
+			 * get the video in BGR24 format and need to convert it
+			 * into BGR24 format.
+			 */
+			if (this.resampler != null) {
+			    // we must resample
+			    newPic = IVideoPicture.make(
+				    this.resampler.getOutputPixelFormat(),
+				    picture.getWidth(), picture.getHeight());
+			    if (this.resampler.resample(newPic, picture) < 0) {
+				throw new CodecException(
+					"could not resample video.");
+			    }
 			}
-		    }
-		    if (newPic.getPixelType() != IPixelFormat.Type.BGR24) {
-			throw new CodecException("could not decode video"
-				+ " as BGR 24 bit data.");
-		    }
+			if (newPic.getPixelType() != IPixelFormat.Type.BGR24) {
+			    throw new CodecException("could not decode video"
+				    + " as BGR 24 bit data.");
+			}
 
-		    // And finally, convert the BGR24 to an Java buffered
-		    // image
-		    // final BufferedImage javaImage = Utils
-		    // .videoPictureToImage(newPic);
+			// And finally, convert the BGR24 to an Java buffered
+			// image
+			final BufferedImage javaImage = Utils
+				.videoPictureToImage(newPic);
 
-		    final BufferedImage javaImage = ConverterFactory
-			    .createConverter(this.descriptor, newPic).toImage(
-				    newPic);
+			// final BufferedImage javaImage = ConverterFactory
+			// .createConverter(this.descriptor, newPic).toImage(
+			// newPic);
 
-		    if (this.timestampInStream == Global.NO_PTS) {
-			this.startTimeTimestamp = System.currentTimeMillis();
+			if (this.timestampInStream == Global.NO_PTS) {
+			    this.startTimeTimestamp = System
+				    .currentTimeMillis();
+			}
+			this.timestampInStream = picture.getTimeStamp();
+			return new Frame(
+				javaImage,
+				new Date(
+					this.startTimeTimestamp
+						+ Math.round(this.timestampInStream / 1000d)));
 		    }
-		    this.timestampInStream = picture.getTimeStamp();
-		    return new Frame(
-			    javaImage,
-			    new Date(
-				    this.startTimeTimestamp
-					    + Math.round(this.timestampInStream / 1000d)));
 		}
 	    }
 	}
